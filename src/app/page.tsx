@@ -278,11 +278,15 @@ export default function Page() {
                               <GraduationCap className="w-5 h-5 text-[#0a0a0a]" />
                             </div>
                             <div>
-                              <p className="font-semibold text-amber-50">{cert.studentName}</p>
+                              <p className="font-semibold text-amber-50">
+                                {cert.studentName.split(' ').map(n => n.charAt(0) + '*'.repeat(Math.max(0, n.length - 1))).join(' ')}
+                              </p>
                               <p className="text-xs text-amber-400/70">{cert.courseName}</p>
                             </div>
                           </div>
-                          <span className="text-xs font-mono text-slate-500 bg-black/50 px-2 py-1 rounded-md">{cert.certId}</span>
+                          <span className="text-xs font-mono text-slate-500 bg-black/50 px-2 py-1 rounded-md">
+                            {cert.certId.substring(0, 3)}...****
+                          </span>
                         </motion.div>
                       ))
                     )}
