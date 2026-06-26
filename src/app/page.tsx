@@ -46,6 +46,9 @@ export default function Page() {
   const [isVerifying, setIsVerifying] = useState(false);
   const [verifyResult, setVerifyResult] = useState<any>(null);
   const [verifyError, setVerifyError] = useState("");
+  
+  // Custom Toast Notification State
+  const [showSuccessToast, setShowSuccessToast] = useState(false);
 
   // --- WALLET ---
   const connectWallet = async () => {
@@ -118,7 +121,10 @@ export default function Page() {
         console.warn("Firebase skipped", err);
       }
 
-      alert("Certificate officially issued on Avalanche!");
+      // Show Custom Success Toast instead of alert
+      setShowSuccessToast(true);
+      setTimeout(() => setShowSuccessToast(false), 4000);
+      
       setCertId(""); setStudentName(""); setCourseName(""); setIssueDate("");
     } catch (e: any) {
       alert("Failed: " + e.message);
@@ -160,6 +166,22 @@ export default function Page() {
 
   return (
     <main className="min-h-screen bg-[#0a0a0a] text-slate-100 selection:bg-amber-500/30 overflow-hidden relative font-sans transition-colors duration-500">
+      
+      {/* Toast Notification */}
+      <AnimatePresence>
+        {showSuccessToast && (
+          <motion.div
+            initial={{ opacity: 0, y: -50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 32, scale: 1 }}
+            exit={{ opacity: 0, y: -50, scale: 0.9 }}
+            className="fixed top-0 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-6 py-4 bg-green-500/10 border border-green-500/30 text-green-400 rounded-full shadow-[0_10px_40px_rgba(34,197,94,0.2)] backdrop-blur-md font-medium"
+          >
+            <CheckCircle2 className="w-5 h-5 text-green-400" />
+            Certificate officially issued on Avalanche!
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Background Effects */}
       <div className="absolute top-0 left-0 w-full h-[500px] bg-gradient-to-b from-amber-900/10 to-transparent pointer-events-none" />
       <div className="absolute -top-40 -right-40 w-96 h-96 bg-amber-500/5 blur-[120px] rounded-full pointer-events-none" />
