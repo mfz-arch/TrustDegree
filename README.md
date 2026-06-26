@@ -1,36 +1,47 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🎓 TrustDegree - Verifiable Credentials on Avalanche
 
-## Getting Started
+TrustDegree is a decentralized anti-fraud infrastructure built on the Avalanche blockchain for the **Avalanche Student Hackathon (Track 2: Education & Credentials)**.
 
-First, run the development server:
+## 🌟 The Problem
+Employers and educational institutions in Africa face a massive crisis of fake degrees and fraudulent credentials. Verifying a candidate's background often requires slow, manual background checks that can take weeks and cost significant money. Honest students suffer because their hard-earned degrees are constantly questioned.
 
+## 💡 The Solution
+TrustDegree empowers universities to issue tamper-proof academic certificates directly to the Avalanche blockchain. When a student applies for a job, the employer simply enters the unique Certificate ID into our Verification Portal. Within milliseconds, they receive cryptographic proof of the degree's authenticity.
+
+## 🏗️ Architecture & Tech Stack
+- **Smart Contracts:** Solidity (Deployed on Avalanche Fuji Testnet)
+- **Frontend UI:** Next.js, TailwindCSS, Framer Motion (Premium Dark/Gold Theme)
+- **Blockchain Interaction:** Ethers.js
+- **Global Indexing / Cache:** Firebase (For instant global feed without excessive RPC calls)
+
+### Smart Contract Information
+- **Network:** Avalanche Fuji Testnet
+- **Contract Address:** `0xD51d285B7739B89B7c509DDE9d3102f726D4Cb48`
+
+## 🚀 How it Works
+
+### For Institutions (Issuing)
+1. The University connects their Web3 Wallet (MetaMask / Core) to the platform.
+2. Navigates to the **Institution Portal**.
+3. Enters the student's details (Name, Course, Date) and a unique Certificate ID.
+4. Clicks "Issue Certificate" and signs the transaction. The data is immutably recorded on Avalanche.
+
+### For Employers (Verifying)
+1. The Employer visits the **Verify Certificate** tab.
+2. Enters the unique Certificate ID provided by the candidate.
+3. The platform queries the Avalanche Smart Contract directly.
+4. Instantly displays a cryptographic proof of authenticity (Green Success Card) or a failure notice if the ID is fake.
+
+## 💻 Running Locally
+
+First, install the dependencies:
+```bash
+npm install
+```
+
+Then, run the development server:
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
