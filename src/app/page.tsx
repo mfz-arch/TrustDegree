@@ -3,26 +3,13 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Wallet, ShieldCheck, Loader2, Sparkles, LogOut, Search, GraduationCap, Building, AlertCircle, FileCheck2, Home, CheckCircle2 } from "lucide-react";
-import { db, collection, addDoc, getDocs, query, orderBy, limit } from "@/lib/firebase";
-import { BrowserProvider, Contract, type Eip1193Provider } from "ethers";
 
-declare global {
-  interface Window {
-    ethereum?: Eip1193Provider;
-  }
-}
-
-// NOTE: Update this with your actual deployed contract address on Avalanche Fuji
-const CONTRACT_ADDRESS = "0xYourContractAddressHere";
-const CONTRACT_ABI = [
-  "function issueCertificate(string _certId, string _studentName, string _courseName, string _issueDate)",
-  "function verifyCertificate(string _certId) view returns (string studentName, string courseName, string issueDate, bool isValid, address issuer)"
-];
-
-type FirebaseCertificate = {
+type Certificate = {
   certId: string;
   studentName: string;
   courseName: string;
+  issueDate: string;
+  issuer: string;
   timestamp: string;
 };
 
@@ -31,8 +18,8 @@ export default function Page() {
   const [isConnecting, setIsConnecting] = useState(false);
   const [activeTab, setActiveTab] = useState<"home" | "issue" | "verify">("home");
 
-  // Firebase Data
-  const [recentCerts, setRecentCerts] = useState<FirebaseCertificate[]>([]);
+  // Local Storage Data
+  const [recentCerts, setRecentCerts] = useState<Certificate[]>([]);
 
   // Issue States
   const [certId, setCertId] = useState("");
@@ -44,27 +31,18 @@ export default function Page() {
   // Verify States
   const [searchCertId, setSearchCertId] = useState("");
   const [isVerifying, setIsVerifying] = useState(false);
-  const [verifyResult, setVerifyResult] = useState<any>(null);
+  const [verifyResult, setVerifyResult] = useState<Certificate | null>(null);
   const [verifyError, setVerifyError] = useState("");
 
-  // --- WALLET ---
-  const connectWallet = async () => {
-    if (typeof window === "undefined" || !window.ethereum) {
-      alert("Please install Core Wallet or MetaMask extension to connect!");
-      return;
-    }
+  // --- MOCK WALLET CONNECTION ---
+  const connectWallet = () => {
     setIsConnecting(true);
-    try {
-      const provider = new BrowserProvider(window.ethereum!);
-      const accounts = await provider.send("eth_requestAccounts", []);
-      if (accounts.length > 0) {
-        setWalletAddress(accounts[0]);
-      }
-    } catch (error) {
-      console.error(error);
-    } finally {
+    setTimeout(() => {
+      // Generate a fake connected wallet address for demonstration
+      const randomHex = Math.random().toString(16).substring(2, 10);
+      setWalletAddress(`0x71C${randomHex}A1B2C3D4E5F6G7H8I9J0`);
       setIsConnecting(false);
-    }
+    }, 1000);
   };
 
   const disconnectWallet = () => {
@@ -72,21 +50,14 @@ export default function Page() {
     setActiveTab("home");
   };
 
-  // --- LOAD FIREBASE DATA ---
+  // --- LOAD LOCAL STORAGE DATA ---
   useEffect(() => {
-    let mounted = true;
-    const fetchInitData = async () => {
-      try {
-        const q = query(collection(db, "certificates"), orderBy("timestamp", "desc"), limit(6));
-        const querySnapshot = await getDocs(q);
-        const fetchedCerts = querySnapshot.docs.map(doc => doc.data() as FirebaseCertificate);
-        if (mounted) setRecentCerts(fetchedCerts);
-      } catch (e) {
-        console.error("Firebase error:", e);
-      }
-    };
-    fetchInitData();
-    return () => { mounted = false; };
+    const saved = localStorage.getItem("trustDegree_certs");
+    if (saved) {
+      const parsed = JSON.parse(saved) as Certificate[];
+      // Show only the 6 most recent
+      setRecentCerts(parsed.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, 6));
+    }
   }, []);
 
   // --- ACTIONS ---
@@ -96,35 +67,36 @@ export default function Page() {
     if (!certId || !studentName || !courseName || !issueDate) return alert("Fill all fields");
     
     setIsIssuing(true);
-    try {
-      const provider = new BrowserProvider(window.ethereum!);
-      const signer = await provider.getSigner();
-      const certContract = new Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
-      
-      const tx = await certContract.issueCertificate(certId, studentName, courseName, issueDate);
-      await tx.wait();
-      
-      // Save metadata to Firebase for the Global feed
-      const newCertMeta: FirebaseCertificate = {
+    
+    // Simulate Blockchain Writing Delay
+    setTimeout(() => {
+      const saved = localStorage.getItem("trustDegree_certs");
+      const existingCerts: Certificate[] = saved ? JSON.parse(saved) : [];
+
+      if (existingCerts.find(c => c.certId === certId)) {
+        alert("A certificate with this ID already exists!");
+        setIsIssuing(false);
+        return;
+      }
+
+      const newCert: Certificate = {
         certId,
         studentName,
         courseName,
+        issueDate,
+        issuer: walletAddress,
         timestamp: new Date().toISOString()
       };
       
-      try {
-        await addDoc(collection(db, "certificates"), newCertMeta);
-      } catch (err) {
-        console.warn("Firebase skipped", err);
-      }
+      const updatedCerts = [...existingCerts, newCert];
+      localStorage.setItem("trustDegree_certs", JSON.stringify(updatedCerts));
+      
+      setRecentCerts(updatedCerts.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, 6));
 
-      alert("Certificate officially issued on Avalanche!");
+      alert("Certificate officially issued (Mock)!");
       setCertId(""); setStudentName(""); setCourseName(""); setIssueDate("");
-    } catch (e: any) {
-      alert("Failed: " + e.message);
-    } finally {
       setIsIssuing(false);
-    }
+    }, 1500);
   };
 
   const handleVerify = async (e: React.FormEvent) => {
@@ -134,28 +106,20 @@ export default function Page() {
     setVerifyResult(null);
     setVerifyError("");
 
-    try {
-      if (typeof window === "undefined" || !window.ethereum) throw new Error("Wallet not found. Verification requires Web3 RPC.");
-      const provider = new BrowserProvider(window.ethereum!);
-      const certContract = new Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider);
-      
-      const result = await certContract.verifyCertificate(searchCertId);
-      
-      if (result.isValid) {
-        setVerifyResult({
-          studentName: result.studentName,
-          courseName: result.courseName,
-          issueDate: result.issueDate,
-          issuer: result.issuer
-        });
+    // Simulate Blockchain Reading Delay
+    setTimeout(() => {
+      const saved = localStorage.getItem("trustDegree_certs");
+      const existingCerts: Certificate[] = saved ? JSON.parse(saved) : [];
+
+      const found = existingCerts.find(c => c.certId === searchCertId);
+
+      if (found) {
+        setVerifyResult(found);
       } else {
-        setVerifyError("Certificate ID not found on the blockchain.");
+        setVerifyError("Certificate ID not found on the simulated network.");
       }
-    } catch (e: any) {
-      setVerifyError("Error verifying certificate: " + e.message);
-    } finally {
       setIsVerifying(false);
-    }
+    }, 1200);
   };
 
   return (
@@ -233,7 +197,7 @@ export default function Page() {
               <div className="space-y-8">
                 <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-sm font-medium">
                   <Sparkles className="w-4 h-4" />
-                  Anti-Fraud Blockchain Infrastructure
+                  Anti-Fraud Infrastructure (Prototype)
                 </div>
 
                 <h1 className="text-5xl lg:text-7xl font-extrabold tracking-tight">
@@ -244,7 +208,7 @@ export default function Page() {
                 </h1>
 
                 <p className="text-lg text-slate-400 max-w-xl leading-relaxed">
-                  Protecting educational integrity across Africa. TrustDegree uses Avalanche smart contracts to issue tamper-proof certificates that employers can verify in seconds.
+                  Protecting educational integrity across Africa. TrustDegree simulates issuing tamper-proof certificates that employers can verify in seconds.
                 </p>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -297,7 +261,7 @@ export default function Page() {
             <motion.div key="verify" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="max-w-2xl mx-auto space-y-8 pt-8">
               <div className="text-center">
                 <h2 className="text-3xl font-bold text-white mb-4">Verify a Certificate</h2>
-                <p className="text-slate-400 text-sm">Enter the unique Certificate ID to cryptographically verify its authenticity against the Avalanche blockchain.</p>
+                <p className="text-slate-400 text-sm">Enter the unique Certificate ID to verify its authenticity.</p>
               </div>
 
               <form onSubmit={handleVerify} className="relative">
@@ -372,7 +336,7 @@ export default function Page() {
                 <div className="text-center p-12 bg-[#0a1122] rounded-3xl border border-white/10">
                   <Building className="w-16 h-16 text-blue-500/50 mx-auto mb-4" />
                   <h2 className="text-2xl font-bold text-white mb-4">Institution Access Only</h2>
-                  <p className="text-slate-400 mb-8">Connect your administrative wallet to issue official certificates to the blockchain.</p>
+                  <p className="text-slate-400 mb-8">Connect your administrative wallet to issue official certificates.</p>
                   <button onClick={connectWallet} className="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold transition-colors">
                     Connect Wallet
                   </button>
@@ -381,7 +345,7 @@ export default function Page() {
                 <div className="bg-[#0a1122] border border-white/10 p-8 rounded-3xl relative overflow-hidden shadow-2xl">
                   <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 to-indigo-600" />
                   <h2 className="text-2xl font-bold text-white mb-2">Issue New Certificate</h2>
-                  <p className="text-slate-400 text-sm mb-8">Deploy an immutable academic record to Avalanche Fuji.</p>
+                  <p className="text-slate-400 text-sm mb-8">Deploy an immutable academic record.</p>
                   
                   <form onSubmit={handleIssueCertificate} className="space-y-5">
                     <div>
@@ -402,7 +366,7 @@ export default function Page() {
                     </div>
                     
                     <button type="submit" disabled={isIssuing} className="w-full mt-4 py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl font-bold text-lg shadow-lg flex items-center justify-center gap-2 disabled:opacity-70">
-                      {isIssuing ? <><Loader2 className="w-5 h-5 animate-spin" /> Writing to Blockchain...</> : <><Sparkles className="w-5 h-5" /> Issue Certificate</>}
+                      {isIssuing ? <><Loader2 className="w-5 h-5 animate-spin" /> Writing Record...</> : <><Sparkles className="w-5 h-5" /> Issue Certificate</>}
                     </button>
                   </form>
                 </div>
