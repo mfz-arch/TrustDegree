@@ -13,7 +13,7 @@ declare global {
 }
 
 // NOTE: Update this with your actual deployed contract address on Avalanche Fuji
-const CONTRACT_ADDRESS = "0xYourContractAddressHere";
+const CONTRACT_ADDRESS = "0xD51d285B7739B89B7c509DDE9d3102f726D4Cb48";
 const CONTRACT_ABI = [
   "function issueCertificate(string _certId, string _studentName, string _courseName, string _issueDate)",
   "function verifyCertificate(string _certId) view returns (string studentName, string courseName, string issueDate, bool isValid, address issuer)"
