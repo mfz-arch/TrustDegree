@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Wallet, ShieldCheck, Loader2, Sparkles, LogOut, Search, GraduationCap, Building, AlertCircle, FileCheck2 } from "lucide-react";
+import { Wallet, ShieldCheck, Loader2, Sparkles, LogOut, Search, GraduationCap, Building, AlertCircle, FileCheck2, Home, CheckCircle2 } from "lucide-react";
 import { db, collection, addDoc, getDocs, query, orderBy, limit } from "@/lib/firebase";
 import { BrowserProvider, Contract, type Eip1193Provider } from "ethers";
 
